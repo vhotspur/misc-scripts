@@ -1,0 +1,9 @@
+#!/bin/sh
+#
+# Sets the X11 background to the same image as is set in Xfce
+#
+# (c) Vojtech Horky
+#
+
+hsetroot -fill "`xfconf-query -c xfce4-desktop -p /backdrop/screen0/monitor0/image-path`"
+

@@ -1,0 +1,37 @@
+#!/bin/sh
+#
+# Unmounts device previously mounted by udiskie.
+# Displays a zenity dialog to select from mounted devices.
+#
+# (c) Vojtech Horky
+#
+
+
+exec_echo() {
+	echo "[exec]" "$@"
+	exec "$@"
+}
+
+DEVS=`mount | grep 'uhelper=udisks' | grep "uid=\`id -u\`" \
+	| sed 's#\(.*\) on \(.*\) type .*#\1\n\2 (\1)#'`
+
+if [ -z "$DEVS" ]; then
+	exec_echo notify-send --icon=error "No devices currently mounted"
+fi
+
+TO_UNMOUNT=`echo "$DEVS" \
+	| zenity \
+		--list \
+		--title "Unmount device" \
+		--text "Select which device to unmount" \
+		--hide-header \
+		--column "Path" \
+		--hide-column 1 \
+		--column "Device" \
+	`
+
+[ -z "$TO_UNMOUNT" ] && exit
+
+
+exec_echo udiskie-umount "$TO_UNMOUNT"
+
