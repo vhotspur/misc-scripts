@@ -1,0 +1,38 @@
+#!/bin/sh
+
+#
+# Offers zenity dialog to select which Eclipse workspace to start.
+# The profiles are stored in .config/eclipse-profiles and the format is
+# name = path/to/eclipse/workspace/directory
+#
+# (c) Vojtech Horky
+#
+
+profiles_file="$HOME/.config/eclipse-profiles"
+
+strip_spaces() {
+	sed \
+		-e 's:[ \t]\+: :g' \
+		-e 's:^ ::' \
+		-e 's: $::'
+}
+
+[ -r "$profiles_file" ] || exit 1
+
+profile=`cut '-d=' -f 1 "$profiles_file" \
+	| strip_spaces \
+	| zenity \
+		--list \
+		--title "Select current profile" \
+		--text "Select which profile to load" \
+		--hide-header \
+		--column "Profile" \
+	`
+
+[ -z "$profile" ] && exit
+
+wspace=`grep '^[ \t]*'"$profile"'[ \t]*=' "$profiles_file" \
+	| cut '-d=' -f 2 \
+	| strip_spaces`
+
+exec eclipse -data "$wspace"
