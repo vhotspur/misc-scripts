@@ -32,6 +32,10 @@ TO_UNMOUNT=`echo "$DEVS" \
 
 [ -z "$TO_UNMOUNT" ] && exit
 
+echo "[exec]" udiskie-umount "$TO_UNMOUNT"
+ERROR_MESSAGE=`udiskie-umount "$TO_UNMOUNT" 2>&1 | tee /dev/stderr | sed -n 's#.*\(Error .*\)#\1#p'`
 
-exec_echo udiskie-umount "$TO_UNMOUNT"
+if [ -n "$ERROR_MESSAGE" ]; then
+	exec_echo zenity --error --text "$ERROR_MESSAGE"
+fi
 
