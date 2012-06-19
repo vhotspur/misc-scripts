@@ -1,0 +1,72 @@
+#!/bin/sh
+#
+# Sets status to back (online) or away in instant messengers.
+# Currently, only Pidgin is supported.
+#
+# (c) Vojtech Horky
+#
+
+# The configuration file is line oriented and describes which statuses
+# shall be set when setting them to away or back on-line.
+#
+# For Pidgin, following format is expected:
+# pidgin-<away|back> <Saved status title>
+# E.g. if you have status named Gone with text "I am away from my desk"
+# and you want to use it for automatic setting away, you would
+# put following line into the configuration file.
+# pidgin-away Gone
+#
+
+CONFIG_FILE="$HOME/.config/im-back-away"
+
+# Depending on script name, we want to set status to away or back
+GOING_AWAY=true
+if echo "$0" | grep -q 'im-back$'; then
+	GOING_AWAY=false
+fi
+
+# To simplify reading from the configuration file.
+if $GOING_AWAY; then
+	STATUS_SUFFIX=away
+else
+	STATUS_SUFFIX=back
+fi
+
+
+
+
+
+#####
+#
+# Pidgin
+#
+
+# Find id of a saved status based on its title
+pidgin_find_saved_status_by_title() {
+	dbus-send \
+		--print-reply \
+		--dest=im.pidgin.purple.PurpleService \
+		/im/pidgin/purple/PurpleObject \
+		im.pidgin.purple.PurpleInterface.PurpleSavedstatusFind \
+		string:"$1" \
+	| sed -n 's/.*int32[ \t]\([0-9]*\).*/\1/p'
+}
+# Set new status based on its id
+pidgin_set_status_by_id() {
+	dbus-send \
+		--print-reply \
+		--dest=im.pidgin.purple.PurpleService \
+		/im/pidgin/purple/PurpleObject \
+		im.pidgin.purple.PurpleInterface.PurpleSavedstatusActivate \
+		"int32:$1"
+}
+
+# Find status title we want to set
+STATUS=`sed -n 's#^pidgin-'$STATUS_SUFFIX' \(.*\)#\1#p' "$CONFIG_FILE"`
+# Get its id
+STATUS_ID=`pidgin_find_saved_status_by_title "$STATUS"`
+# If the id is valid (non zero), set it
+if [ "$STATUS_ID" -ne 0 ] 2>/dev/null; then
+	pidgin_set_status_by_id "$STATUS_ID"
+fi
+
