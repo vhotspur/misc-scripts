@@ -35,6 +35,17 @@ fi
 
 
 
+#####
+#
+# XChat
+#
+
+# Find if xchat is mentioned
+if grep -iq '^xchat' "$CONFIG_FILE"; then
+	NEW_STATUS=`if $GOING_AWAY; then echo away; else echo back; fi`
+	xchat-command "$NEW_STATUS"
+fi
+
 
 #####
 #
