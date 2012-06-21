@@ -1,0 +1,69 @@
+#!/usr/bin/env python2
+
+#
+# Script copied from Insane Rantings blog of Richard Monk
+# http://blog.woofbit.com/2010/10/11/xchat-command-line-remote-control/
+#
+ 
+#Xchat/dbus based remote-control app for RHEL and Fedora
+ 
+# howto use:
+# xchat-command msg #helpdesk This is a test
+#     - Send "This is a test" to the #helpdesk channel
+# xchat-command afk
+#    - Set self as NICK|afk
+# xchat-command return
+#    - Set self as NICK
+ 
+ 
+ 
+import dbus, sys, re
+bus = dbus.SessionBus()
+object = bus.get_object("org.xchat.service", "/org/xchat/Remote")
+xchat = dbus.Interface(object, "org.xchat.plugin")
+oldStyle=False
+command=sys.argv[1]
+ 
+try:
+    nickname=xchat.GetInfo("nick")
+except:
+    # Maybe we're using the old style
+    try:
+        object = bus.get_object("org.xchat.service", "/org/xchat/RemoteObject")
+        xchat = dbus.Interface(object, "org.xchat.interface")
+        nickname=xchat.GetInfo("nick")
+        oldStyle=True
+    except:
+        print "xchat not running"
+        sys.exit(1)
+ 
+ 
+def setNick(newNick):
+    if oldStyle:
+        xchat.command('anick %s'%newNick)
+    else:
+        xchat.Command('anick %s'%newNick)
+ 
+ 
+if command == "afk":
+    if not re.compile("afk").search(nickname):
+        newNick="%s|afk"%nickname
+        setNick(newNick)    
+        sys.exit(0)
+    else:
+        print "sorry, already afk"
+ 
+if command == "return":
+    oldNick,afk = nickname.rsplit('|')
+    newNick=oldNick
+    setNick(newNick)
+    sys.exit(0)
+ 
+for arg in sys.argv[2:]:
+    command= "%s %s"%(command, arg)
+print "Command is %s"%command
+if oldStyle:
+    xchat.command(command)
+else:
+    xchat.Command(command)
+
