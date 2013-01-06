@@ -1,0 +1,37 @@
+#!/bin/sh
+
+# Convert PDF in US letter format to A4-paper, resizing to better
+# fit the full width of A4. Expects portrait document.
+
+my_run() {
+	echo "[usletter-to-a4paper]:" "$@"
+	"$@"
+}
+
+RUN=my_run
+
+INPUT="$1"
+OUTPUT="$2"
+
+if [ -z "$INPUT" ]; then
+	echo "Usage: $0 pdf-in-us-letter-to-convert"
+	echo "Converts given PDF to A4 paper (crop and resize)."
+	exit
+fi
+
+if ! [ -r "$INPUT" ]; then
+	echo "Input file not readable!" >&2
+	exit 1 
+fi
+
+if [ -z "$OUTPUT" ]; then
+	OUTPUT=`echo "$INPUT" | sed 's/\.pdf$//'`
+	OUTPUT="${OUTPUT}-a4paper.pdf"
+fi
+
+CROPPED=`mktemp --suffix .pdf`
+trap "rm -f \"$CROPPED\"; exit;" INT QUIT TERM EXIT
+
+$RUN pdfcrop "$INPUT" "$CROPPED" || exit 1
+$RUN pdfnup --nup 1x1 --paper a4paper --no-landscape --scale 0.95 --outfile "$OUTPUT" "$CROPPED" || exit 1
+exit 0
