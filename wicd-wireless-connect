@@ -1,0 +1,22 @@
+#!/bin/sh
+
+# Connect to given Wi-Fi using Wicd command line client.
+# Useful if the network is not stable and the graphical client
+# just gives up (don't know why that happens).
+
+ESSID="$1"
+
+if [ -z "$ESSID" ]; then
+	echo "Usage: $0 ESSID-to-connect-to"
+	exit 1
+fi
+
+WICD_CLI=`which wicd-cli`
+
+n=`$WICD_CLI -y -l | grep MS-KONFERENCE | head -n 1 | cut  -f 1`
+if [ -z "$n" ]; then
+	echo "Network with given ESSID not found!"
+	exit 2
+fi
+
+$WICD_CLI -y -n $n -c
