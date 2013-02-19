@@ -1,0 +1,46 @@
+#!/bin/sh
+
+#
+# Lists all dependencies (recursively) of a given package through
+# pacman.
+#
+# (c) Vojtech Horky
+#
+
+PACMAN=pacman
+
+get_simple_dependencies() {
+	LC_ALL=C pacman -Qi "$1" | grep 'Depends On' | cut '-d:' -f 2
+}
+
+make_dependencies_unique() {
+	sed \
+		-e 's/^[ \t]*//' -e 's/[ \t]*$//' \
+		-e '/^$/d' \
+		-e 's/[><=].*//' \
+		-e '/None/d' \
+		| sort | uniq
+}
+
+temp_unsorted=`mktemp`
+temp_filtered=`mktemp`
+temp_filtered_prev=`mktemp`
+
+for package in "$@"; do
+	echo "" >"$temp_unsorted"
+	echo "" >"$temp_filtered_prev"
+	get_simple_dependencies "$package" | sed 's/[ \t]/\n/g' >>"$temp_unsorted"
+	make_dependencies_unique <"$temp_unsorted" >"$temp_filtered"
+	while ! cmp -s "$temp_filtered" "$temp_filtered_prev"; do
+		cat "$temp_filtered" >"$temp_unsorted"
+		cat "$temp_filtered" >"$temp_filtered_prev"
+		while read dep; do
+			get_simple_dependencies "$dep" | sed 's/[ \t]/\n/g' >>"$temp_unsorted"
+		done <"$temp_filtered"
+		make_dependencies_unique <"$temp_unsorted" >"$temp_filtered"
+		# sed -e 's/^[ \t]*//' -e 's/[ \t]*$//' -e '/^$/d' -e '/None/d' <"$temp_unsorted" | sort | uniq >"$temp_filtered"
+	done
+	cat "$temp_filtered"
+done
+
+
