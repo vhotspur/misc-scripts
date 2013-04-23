@@ -1,0 +1,28 @@
+#!/bin/sh
+
+#
+# Run latexmk continously, updating the final PDF file whenever some of
+# the source files (extra arguments) changes.
+#
+# (c) Vojtech Horky
+#
+
+
+JOBNAME=".latexmk.cont.$$"
+
+touch "$JOBNAME"
+
+(
+	while [ -e "$JOBNAME" ]; do
+		latexmk -pdf -latexoption=-halt-on-error "$1" </dev/null \
+			|| notify-send --icon=error "Creating PDF failed"
+		echo "================================================"
+		echo "Waiting for file change (hit <Enter> to quit... "
+		echo "================================================"
+		inotifywait "$@"
+	done
+) &
+
+read xxx
+echo "Terminating..."
+rm -f "$JOBNAME"
